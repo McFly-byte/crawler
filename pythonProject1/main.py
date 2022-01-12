@@ -54,12 +54,13 @@ def getSID():
 
 # 需要实现：从excel文件中得到专利号，根据专利号访问网站,存储数据，若掉线重新获得SID并继续进行动作
 def get_patent_details( num_begin, num_end, index, SID, datalist=[] ):
+    if num_begin > num_end:
+        return
     length = len(datalist)  # 要操作的专利数目
     # 将输出写入文本文件中
     mylog = open(log_path, mode='a', encoding='utf-8')
-    slip = open('slip.txt',mode='a', encoding='utf-8')
-    print("=====start=====", file=mylog)
-
+    slip = open(slip_path,mode='a', encoding='utf-8')
+    print("===START==========线程："+str(index)+" ( "+str(num_begin)+","+str(num_end)+" ) "+" 时间 "+time.ctime(), file=mylog)
     url = "http://apps.webofknowledge.com/DIIDW_GeneralSearch_input.do?product=DIIDW&SID=" + SID + "&search_mode=GeneralSearch"
     # 进入网站爬取信息
     # 初始化搜索页面
@@ -131,7 +132,6 @@ def get_patent_details( num_begin, num_end, index, SID, datalist=[] ):
                         tmp = driver.find_element(By.CLASS_NAME,flag_class).text
                     except: # 不成功刷新页面
                         driver.refresh()
-                #TODO 弄清楚下面这段是干嘛的
                 th_contents = driver.find_element(By.XPATH,table_xpath).text
                 id = th_contents.split('\n')
                 id_leng = len(id)
@@ -147,8 +147,9 @@ def get_patent_details( num_begin, num_end, index, SID, datalist=[] ):
                 booksheet.write(l + 1, 0, lst[l])
             # 将xls文件保存到指定路径
             workbook.save(filename)
-            print("The file located in " + filename + " has been saved.")
+            print("-----------The file located in " + filename + " has been saved-----------")
             print("进程-" + str(index) + "-总进度: " + str(i + 1) + " /   " + str(length), file=mylog)
+            print("进程-" + str(index) + "-总进度: " + str(i + 1) + " /   " + str(length))
         except:
             print(time.ctime() + "  PROGRESS-" + str(index) + "-OVERALL: " + str(i + 1) + " /   " + str(length), file=mylog)
             print( datalist[i], file=slip )
@@ -182,9 +183,10 @@ def get_patent_NO( path ):
 def history():
     pass
 
-#TODO 变量 收纳 最后再考虑
+#TODO 变量 收纳 多文件形式
 backlog_path = "Final"
 log_path = "log.txt"
+slip_path = "slip.txt"
 dest_path = "achievements"
 input_box = "//*[@id='value(input1)']"  # 专利号输入框
 check_btn = "[class='large-button primary-button margin-left-10']"  # 检索按钮
@@ -195,7 +197,7 @@ switch_xpath = "//*[@id='summary_navigation']/nav/table/tbody/tr/td[2]/input"  #
 flag_class = "NEWpageTitle" # 判断是否加载成功的class
 patent_cited_by_exmnr = ["//*[@id='FullRecDataTable']/tbody/tr[7]/td/table/tbody/tr/td[contains(text(),'引用的专利')]",
                          "//*[@id='FullRecDataTable']/tbody/tr[7]/td/table/tbody/tr/td[contains(text(),'cited')]"]
-Access_interval = [
+Access_interval = [ # 各线程爬取起终点
     (0, 0),
     (55, 99),
     (164,199),
